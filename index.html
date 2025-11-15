@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linux 檔案系統互動學習工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .terminal {
+            background: #1e1e1e;
+            border-radius: 10px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            color: #00ff00;
+            min-height: 300px;
+            max-height: 500px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+
+        .terminal-line {
+            margin-bottom: 5px;
+            line-height: 1.6;
+        }
+
+        .prompt {
+            color: #4fc3f7;
+        }
+
+        .command {
+            color: #ffeb3b;
+        }
+
+        .output {
+            color: #ffffff;
+        }
+
+        .error {
+            color: #ff5252;
+        }
+
+        .success {
+            color: #69f0ae;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .command-input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: 'Courier New', monospace;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .filesystem-tree {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            font-family: 'Courier New', monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .tree-item {
+            padding: 5px;
+            margin-left: 20px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .tree-item:hover {
+            background: #f0f0f0;
+        }
+
+        .tree-item.current {
+            background: #e3f2fd;
+            font-weight: bold;
+        }
+
+        .tree-item.directory {
+            color: #2196f3;
+        }
+
+        .tree-item.file {
+            color: #757575;
+        }
+
+        .lesson-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .lesson-card:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateX(5px);
+        }
+
+        .lesson-card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .lesson-card.active {
+            background: #e3f2fd;
+            border-left-color: #2196f3;
+        }
+
+        .command-example {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .hint {
+            background: #fff9c4;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #fbc02d;
+        }
+
+        .progress-bar {
+            background: #e0e0e0;
+            height: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            border: none;
+            background: #e0e0e0;
+            cursor: pointer;
+            border-radius: 8px 8px 0 0;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            background: white;
+            color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🐧 Linux 檔案系統互動學習工具</h1>
+            <p>透過實際操作學習 Linux 檔案系統指令</p>
+        </div>
+
+        <div class="main-content">
+            <!-- 左側：教學與終端機 -->
+            <div>
+                <div class="section">
+                    <h2>📚 互動式課程</h2>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress" style="width: 0%">0%</div>
+                    </div>
+                    
+                    <div id="lessons-container">
+                        <!-- 課程卡片將由 JavaScript 生成 -->
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>💻 終端機模擬器</h2>
+                    <div class="terminal" id="terminal">
+                        <div class="terminal-line success">歡迎使用 Linux 檔案系統學習工具！</div>
+                        <div class="terminal-line">輸入指令開始學習，或選擇上方的課程</div>
+                        <div class="terminal-line">提示：輸入 'help' 查看可用指令</div>
+                    </div>
+                    <div class="input-area">
+                        <input type="text" class="command-input" id="commandInput" placeholder="輸入 Linux 指令...">
+                        <button class="btn btn-primary" onclick="executeCommand()">執行</button>
+                        <button class="btn btn-secondary" onclick="clearTerminal()">清除</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右側：檔案系統與教學內容 -->
+            <div>
+                <div class="section">
+                    <h2>🗂️ 檔案系統結構</h2>
+                    <div class="filesystem-tree" id="filesystem">
+                        <!-- 檔案系統樹將由 JavaScript 生成 -->
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>📖 當前課程內容</h2>
+                    <div class="tabs">
+                        <button class="tab active" onclick="switchTab('explanation')">說明</button>
+                        <button class="tab" onclick="switchTab('examples')">範例</button>
+                        <button class="tab" onclick="switchTab('practice')">練習</button>
+                    </div>
+                    
+                    <div id="explanation" class="tab-content active">
+                        <h3>選擇左側課程開始學習</h3>
+                        <p>點擊上方的課程卡片，開始學習 Linux 檔案系統操作！</p>
+                    </div>
+                    
+                    <div id="examples" class="tab-content">
+                        <h3>指令範例</h3>
+                        <div id="examples-content"></div>
+                    </div>
+                    
+                    <div id="practice" class="tab-content">
+                        <h3>實作練習</h3>
+                        <div id="practice-content"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 檔案系統模擬
+        let filesystem = {
+            '/': {
+                type: 'directory',
+                children: {
+                    'home': {
+                        type: 'directory',
+                        children: {
+                            'user': {
+                                type: 'directory',
+                                children: {
+                                    'documents': {
+                                        type: 'directory',
+                                        children: {
+                                            'report.txt': { type: 'file', content: '這是一份報告' },
+                                            'notes.txt': { type: 'file', content: '學習筆記' }
+                                        }
+                                    },
+                                    'downloads': {
+                                        type: 'directory',
+                                        children: {
+                                            'file.zip': { type: 'file', content: '壓縮檔案' }
+                                        }
+                                    },
+                                    'welcome.txt': { type: 'file', content: '歡迎來到 Linux 世界！' }
+                                }
+                            }
+                        }
+                    },
+                    'etc': {
+                        type: 'directory',
+                        children: {
+                            'config.conf': { type: 'file', content: '系統設定檔' }
+                        }
+                    },
+                    'var': {
+                        type: 'directory',
+                        children: {
+                            'log': {
+                                type: 'directory',
+                                children: {}
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        let currentPath = '/home/user';
+        let commandHistory = [];
+        let currentLesson = 0;
+
+        const lessons = [
+            {
+                title: '1. 認識目前位置 (pwd)',
+                description: '學習如何查看當前所在的目錄',
+                explanation: `
+                    <h3>pwd - Print Working Directory</h3>
+                    <p><strong>pwd</strong> 指令用來顯示目前所在的完整路徑。</p>
+                    <div class="hint">
+                        <strong>💡 提示：</strong> 在 Linux 中，你隨時都在某個目錄中。pwd 就像是告訴你「你現在在哪裡」。
+                    </div>
+                    <div class="command-example">$ pwd</div>
+                    <p>執行後會顯示類似：<code>/home/user</code></p>
+                `,
+                examples: [
+                    { cmd: 'pwd', desc: '顯示當前目錄的完整路徑' }
+                ],
+                practice: '試著在終端機輸入 <code>pwd</code> 查看你目前的位置！'
+            },
+            {
+                title: '2. 查看目錄內容 (ls)',
+                description: '列出目錄中的檔案和資料夾',
+                explanation: `
+                    <h3>ls - List Directory Contents</h3>
+                    <p><strong>ls</strong> 指令用來列出目錄中的所有檔案和子目錄。</p>
+                    <div class="hint">
+                        <strong>💡 提示：</strong> ls 就像是打開一個資料夾，查看裡面有什麼東西。
+                    </div>
+                    <div class="command-example">$ ls</div>
+                    <p>常用選項：</p>
+                    <ul>
+                        <li><code>ls -l</code> : 顯示詳細資訊</li>
+                        <li><code>ls -a</code> : 顯示隱藏檔案</li>
+                        <li><code>ls -lh</code> : 以人類可讀的格式顯示大小</li>
+                    </ul>
+                `,
+                examples: [
+                    { cmd: 'ls', desc: '列出當前目錄的內容' },
+                    { cmd: 'ls -l', desc: '以詳細格式列出' },
+                    { cmd: 'ls /home', desc: '列出指定目錄的內容' }
+                ],
+                practice: '試著使用 <code>ls</code> 查看當前目錄有哪些檔案和資料夾！'
+            },
+            {
+                title: '3. 切換目錄 (cd)',
+                description: '在不同目錄之間移動',
+                explanation: `
+                    <h3>cd - Change Directory</h3>
+                    <p><strong>cd</strong> 指令用來切換到不同的目錄。</p>
+                    <div class="hint">
+                        <strong>💡 提示：</strong> cd 就像是在檔案系統中「走動」。
+                    </div>
+                    <h4>特殊符號：</h4>
+                    <ul>
+                        <li><code>.</code> : 當前目錄</li>
+                        <li><code>..</code> : 上一層目錄</li>
+                        <li><code>~</code> : 使用者家目錄</li>
+                        <li><code>/</code> : 根目錄</li>
+                    </ul>
+                `,
+                examples: [
+                    { cmd: 'cd documents', desc: '進入 documents 目錄' },
+                    { cmd: 'cd ..', desc: '回到上一層目錄' },
+                    { cmd: 'cd ~', desc: '回到家目錄' },
+                    { cmd: 'cd /home/user/documents', desc: '使用絕對路徑切換' }
+                ],
+                practice: '試著使用 <code>cd documents</code> 進入 documents 資料夾，然後用 <code>cd ..</code> 回來！'
+            },
+            {
+                title: '4. 建立目錄 (mkdir)',
+                description: '創建新的資料夾',
+                explanation: `
+                    <h3>mkdir - Make Directory</h3>
+                    <p><strong>mkdir</strong> 指令用來建立新的目錄。</p>
+                    <div class="hint">
+                        <strong>💡 提示：</strong> 就像在檔案總管中「新增資料夾」。
+                    </div>
+                    <div class="command-example">$ mkdir 資料夾名稱</div>
+                    <p>常用選項：</p>
+                    <ul>
+                        <li><code>mkdir -p</code> : 建立多層目錄（如果父目錄不存在也會一起建立）</li>
+                    </ul>
+                `,
+                examples: [
+                    { cmd: 'mkdir projects', desc: '建立名為 projects 的目錄' },
+                    { cmd: 'mkdir -p work/2024/jan', desc: '一次建立多層目錄' }
+                ],
+                practice: '試著使用 <code>mkdir myproject</code> 建立一個新資料夾！'
+            },
+            {
+                title: '5. 建立檔案 (touch)',
+                description: '創建空白檔案',
+                explanation: `
+                    <h3>touch - Create File</h3>
+                    <p><strong>touch</strong> 指令用來建立空白檔案。</p>
+                    <div class="hint">
+                        <strong>💡 提示：</strong> 原本 touch 用來更新檔案時間，但也常用來快速建立新檔案。
+                    </div>
+                    <div class="command-example">$ touch 檔案名稱</div>
+                `,
+                examples: [
+                    { cmd: 'touch readme.txt', desc: '建立 readme.txt 檔案' },
+                    { cmd: 'touch file1.txt file2.txt', desc: '一次建立多個檔案' }
+                ],
+                practice: '試著使用 <code>touch test.txt</code> 建立一個新檔案！'
+            },
+            {
+                title: '6. 刪除檔案 (rm)',
+                description: '移除檔案或目錄',
+                explanation: `
+                    <h3>rm - Remove</h3>
+                    <p><strong>rm</strong> 指令用來刪除檔案或目錄。</p>
+                    <div class="hint">
+                        <strong>⚠️ 警告：</strong> rm 刪除的檔案無法復原！使用前請確認。
+                    </div>
+                    <p>常用選項：</p>
+                    <ul>
+                        <li><code>rm -r</code> : 遞迴刪除目錄及其內容</li>
+                        <li><code>rm -i</code> : 刪除前詢問確認</li>
+                        <li><code>rm -f</code> : 強制刪除（不建議新手使用）</li>
+                    </ul>
+                `,
+                examples: [
+                    { cmd: 'rm test.txt', desc: '刪除 test.txt 檔案' },
+                    { cmd: 'rm -r oldfolder', desc: '刪除目錄及其內容' },
+                    { cmd: 'rm -i file.txt', desc: '刪除前詢問確認' }
+                ],
+                practice: '試著先用 <code>touch temp.txt</code> 建立檔案，再用 <code>rm temp.txt</code> 刪除它！'
+            },
+            {
+                title: '7. 複製檔案 (cp)',
+                description: '複製檔案或目錄',
+                explanation: `
+                    <h3>cp - Copy</h3>
+                    <p><strong>cp</strong> 指令用來複製檔案或目錄。</p>
+                    <div class="command-example">$ cp 來源 目的地</div>
+                    <p>常用選項：</p>
+                    <ul>
+                        <li><code>cp -r</code> : 遞迴複製目錄</li>
+                        <li><code>cp -i</code> : 覆蓋前詢問</li>
+                    </ul>
+                `,
+                examples: [
+                    { cmd: 'cp file.txt backup.txt', desc: '複製檔案' },
+                    { cmd: 'cp -r folder1 folder2', desc: '複製整個目錄' },
+                    { cmd: 'cp file.txt ../other/', desc: '複製到其他目錄' }
+                ],
+                practice: '試著使用 <code>cp welcome.txt welcome_backup.txt</code> 複製檔案！'
+            },
+            {
+                title: '8. 移動/重新命名 (mv)',
+                description: '移動或重新命名檔案',
+                explanation: `
+                    <h3>mv - Move</h3>
+                    <p><strong>mv</strong> 指令用來移動檔案或重新命名。</p>
+                    <div class="hint">
+                        <strong>💡 提示：</strong> mv 既可以移動檔案，也可以重新命名（本質上是「移動到新名稱」）。
+                    </div>
+                    <div class="command-example">$ mv 來源 目的地</div>
+                `,
+                examples: [
+                    { cmd: 'mv old.txt new.txt', desc: '重新命名檔案' },
+                    { cmd: 'mv file.txt documents/', desc: '移動檔案到目錄' },
+                    { cmd: 'mv -i file.txt dest/', desc: '覆蓋前詢問' }
+                ],
+                practice: '試著使用 <code>mv welcome.txt hello.txt</code> 重新命名檔案！'
+            },
+            {
+                title: '9. 萬用字元 (*)',
+                description: '使用萬用字元批次操作',
+                explanation: `
+                    <h3>Wildcards - 萬用字元</h3>
+                    <p>萬用字元讓你可以一次操作多個檔案。</p>
+                    <h4>常用萬用字元：</h4>
+                    <ul>
+                        <li><code>*</code> : 匹配任意字元（包含無字元）</li>
+                        <li><code>?</code> : 匹配單一字元</li>
+                        <li><code>[abc]</code> : 匹配括號內的任一字元</li>
+                    </ul>
+                    <div class="hint">
+                        <strong>💡 提示：</strong> 這就是 shell expansion 的一部分！
+                    </div>
+                `,
+                examples: [
+                    { cmd: 'ls *.txt', desc: '列出所有 .txt 檔案' },
+                    { cmd: 'rm temp*', desc: '刪除所有 temp 開頭的檔案' },
+                    { cmd: 'cp *.txt backup/', desc: '複製所有 txt 檔案到 backup' }
+                ],
+                practice: '試著使用 <code>ls *.txt</code> 列出所有文字檔案！'
+            },
+            {
+                title: '10. 大括號展開 (Brace Expansion)',
+                description: '使用大括號快速生成多個項目',
+                explanation: `
+                    <h3>Brace Expansion - 大括號展開</h3>
+                    <p>大括號展開讓你可以快速生成一系列的字串。</p>
+                    <div class="command-example">$ echo {1..5}</div>
+                    <p>會輸出：1 2 3 4 5</p>
+                    <h4>應用範例：</h4>
+                    <ul>
+                        <li><code>{1..10}</code> : 數字序列</li>
+                        <li><code>{a..z}</code> : 字母序列</li>
+                        <li><code>{file1,file2,file3}</code> : 自訂項目</li>
+                    </ul>
+                `,
+                examples: [
+                    { cmd: 'mkdir {jan,feb,mar}', desc: '建立三個月份目錄' },
+                    { cmd: 'touch file{1..5}.txt', desc: '建立 file1.txt 到 file5.txt' },
+                    { cmd: 'echo {A..C}{1..3}', desc: '組合展開：A1 A2 A3 B1...' }
+                ],
+                practice: '試著使用 <code>mkdir month{1..3}</code> 建立三個資料夾！'
+            }
+        ];
+
+        // 初始化
+        function init() {
+            renderLessons();
+            renderFilesystem();
+            updateProgress();
+            
+            document.getElementById('commandInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    executeCommand();
+                }
+            });
+        }
+
+        // 渲染課程列表
+        function renderLessons() {
+            const container = document.getElementById('lessons-container');
+            container.innerHTML = lessons.map((lesson, index) => `
+                <div class="lesson-card ${index === currentLesson ? 'active' : ''}" onclick="selectLesson(${index})">
+                    <h3>${lesson.title}</h3>
+                    <p>${lesson.description}</p>
+                </div>
+            `).join('');
+        }
+
+        // 選擇課程
+        function selectLesson(index) {
+            currentLesson = index;
+            const lesson = lessons[index];
+            
+            // 更新課程卡片樣式
+            renderLessons();
+            
+            // 更新說明內容
+            document.getElementById('explanation').innerHTML = lesson.explanation;
+            
+            // 更新範例內容
+            const examplesHtml = lesson.examples.map(ex => `
+                <div class="command-example">
+                    <strong>$ ${ex.cmd}</strong><br>
+                    <span style="color: #666;">${ex.desc}</span>
+                </div>
+            `).join('');
+            document.getElementById('examples-content').innerHTML = examplesHtml;
+            
+            // 更新練習內容
+            document.getElementById('practice-content').innerHTML = `
+                <div class="hint">
+                    <strong>📝 練習任務：</strong><br>
+                    ${lesson.practice}
+                </div>
+            `;
+            
+            // 切換到說明標籤
+            switchTab('explanation');
+            
+            // 在終端機顯示課程開始訊息
+            addToTerminal(`開始課程：${lesson.title}`, 'success');
+        }
+
+        // 切換標籤
+        function switchTab(tabName) {
+            // 移除所有 active 類別
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // 添加 active 到選中的標籤
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        // 渲染檔案系統
+        function renderFilesystem() {
+            const container = document.getElementById('filesystem');
+            container.innerHTML = '<div style="font-weight: bold; margin-bottom: 10px;">📁 檔案系統結構</div>' + 
+                                  renderTree(filesystem['/'], '/', 0);
+        }
+
+        function renderTree(node, path, depth) {
+            let html = '';
+            const indent = '  '.repeat(depth);
+            const isCurrent = path === currentPath;
+            
+            if (node.type === 'directory') {
+                html += `<div class="tree-item directory ${isCurrent ? 'current' : ''}" style="margin-left: ${depth * 20}px">
+                    📁 ${path === '/' ? '/' : path.split('/').pop() || '/'}
+                    ${isCurrent ? ' ← 你在這裡' : ''}
+                </div>`;
+                
+                if (node.children) {
+                    for (let [name, child] of Object.entries(node.children)) {
+                        const childPath = path === '/' ? `/${name}` : `${path}/${name}`;
+                        html += renderTree(child, childPath, depth + 1);
+                    }
+                }
+            } else {
+                html += `<div class="tree-item file" style="margin-left: ${depth * 20}px">
+                    📄 ${path.split('/').pop()}
+                </div>`;
+            }
+            
+            return html;
+        }
+
+        // 執行指令
+        function executeCommand() {
+            const input = document.getElementById('commandInput');
+            const command = input.value.trim();
+            
+            if (!command) return;
+            
+            // 顯示指令
+            addToTerminal(`<span class="prompt">user@linux:${currentPath}$</span> <span class="command">${command}</span>`);
+            
+            // 解析並執行指令
+            const parts = command.split(' ');
+            const cmd = parts[0];
+            const args = parts.slice(1);
+            
+            commandHistory.push(command);
+            
+            switch(cmd) {
+                case 'pwd':
+                    addToTerminal(currentPath, 'output');
+                    break;
+                    
+                case 'ls':
+                    handleLs(args);
+                    break;
+                    
+                case 'cd':
+                    handleCd(args);
+                    break;
+                    
+                case 'mkdir':
+                    handleMkdir(args);
+                    break;
+                    
+                case 'touch':
+                    handleTouch(args);
+                    break;
+                    
+                case 'rm':
+                    handleRm(args);
+                    break;
+                    
+                case 'cp':
+                    handleCp(args);
+                    break;
+                    
+                case 'mv':
+                    handleMv(args);
+                    break;
+                    
+                case 'cat':
+                    handleCat(args);
+                    break;
+                    
+                case 'echo':
+                    handleEcho(args);
+                    break;
+                    
+                case 'clear':
+                    clearTerminal();
+                    input.value = '';
+                    return;
+                    
+                case 'help':
+                    showHelp();
+                    break;
+                    
+                default:
+                    addToTerminal(`指令未找到: ${cmd}`, 'error');
+                    addToTerminal('輸入 help 查看可用指令', 'output');
+            }
+            
+            input.value = '';
+            updateProgress();
+            renderFilesystem();
+        }
+
+        // 處理 ls 指令
+        function handleLs(args) {
+            const targetPath = args[0] || currentPath;
+            const node = getNodeAtPath(resolvePath(targetPath));
+            
+            if (!node) {
+                addToTerminal(`ls: 無法存取 '${targetPath}': 沒有此檔案或目錄`, 'error');
+                return;
+            }
+            
+            if (node.type !== 'directory') {
+                addToTerminal(targetPath, 'output');
+                return;
+            }
+            
+            const items = Object.keys(node.children || {});
+            if (items.length === 0) {
+                addToTerminal('(空目錄)', 'output');
+            } else {
+                items.forEach(item => {
+                    const itemNode = node.children[item];
+                    const icon = itemNode.type === 'directory' ? '📁' : '📄';
+                    addToTerminal(`${icon} ${item}`, 'output');
+                });
+            }
+        }
+
+        // 處理 cd 指令
+        function handleCd(args) {
+            if (args.length === 0) {
+                currentPath = '/home/user';
+                addToTerminal('已切換到家目錄', 'success');
+                return;
+            }
+            
+            const targetPath = args[0];
+            let newPath;
+            
+            if (targetPath === '~') {
+                newPath = '/home/user';
+            } else if (targetPath === '/') {
+                newPath = '/';
+            } else {
+                newPath = resolvePath(targetPath);
+            }
+            
+            const node = getNodeAtPath(newPath);
+            
+            if (!node) {
+                addToTerminal(`cd: ${targetPath}: 沒有此檔案或目錄`, 'error');
+                return;
+            }
+            
+            if (node.type !== 'directory') {
+                addToTerminal(`cd: ${targetPath}: 不是目錄`, 'error');
+                return;
+            }
+            
+            currentPath = newPath;
+            addToTerminal(`已切換到 ${currentPath}`, 'success');
+        }
+
+        // 處理 mkdir 指令
+        function handleMkdir(args) {
+            if (args.length === 0) {
+                addToTerminal('mkdir: 缺少操作數', 'error');
+                return;
+            }
+            
+            const dirName = args[0];
+            const fullPath = resolvePath(dirName);
+            const parentPath = fullPath.substring(0, fullPath.lastIndexOf('/')) || '/';
+            const newDirName = fullPath.split('/').pop();
+            
+            const parentNode = getNodeAtPath(parentPath);
+            
+            if (!parentNode) {
+                addToTerminal(`mkdir: 無法建立目錄 '${dirName}': 沒有此檔案或目錄`, 'error');
+                return;
+            }
+            
+            if (parentNode.children[newDirName]) {
+                addToTerminal(`mkdir: 無法建立目錄 '${dirName}': 檔案已存在`, 'error');
+                return;
+            }
+            
+            parentNode.children[newDirName] = {
+                type: 'directory',
+                children: {}
+            };
+            
+            addToTerminal(`已建立目錄 '${dirName}'`, 'success');
+        }
+
+        // 處理 touch 指令
+        function handleTouch(args) {
+            if (args.length === 0) {
+                addToTerminal('touch: 缺少檔案操作數', 'error');
+                return;
+            }
+            
+            args.forEach(fileName => {
+                const fullPath = resolvePath(fileName);
+                const parentPath = fullPath.substring(0, fullPath.lastIndexOf('/')) || '/';
+                const newFileName = fullPath.split('/').pop();
+                
+                const parentNode = getNodeAtPath(parentPath);
+                
+                if (!parentNode) {
+                    addToTerminal(`touch: 無法建立 '${fileName}': 沒有此檔案或目錄`, 'error');
+                    return;
+                }
+                
+                if (!parentNode.children[newFileName]) {
+                    parentNode.children[newFileName] = {
+                        type: 'file',
+                        content: ''
+                    };
+                    addToTerminal(`已建立檔案 '${fileName}'`, 'success');
+                } else {
+                    addToTerminal(`已更新 '${fileName}' 的時間戳記`, 'output');
+                }
+            });
+        }
+
+        // 處理 rm 指令
+        function handleRm(args) {
+            if (args.length === 0) {
+                addToTerminal('rm: 缺少操作數', 'error');
+                return;
+            }
+            
+            const recursive = args.includes('-r');
+            const filesToRemove = args.filter(arg => arg !== '-r');
+            
+            filesToRemove.forEach(fileName => {
+                const fullPath = resolvePath(fileName);
+                const parentPath = fullPath.substring(0, fullPath.lastIndexOf('/')) || '/';
+                const targetName = fullPath.split('/').pop();
+                
+                const parentNode = getNodeAtPath(parentPath);
+                
+                if (!parentNode || !parentNode.children[targetName]) {
+                    addToTerminal(`rm: 無法移除 '${fileName}': 沒有此檔案或目錄`, 'error');
+                    return;
+                }
+                
+                const targetNode = parentNode.children[targetName];
+                
+                if (targetNode.type === 'directory' && !recursive) {
+                    addToTerminal(`rm: 無法移除 '${fileName}': 是目錄（使用 -r 刪除目錄）`, 'error');
+                    return;
+                }
+                
+                delete parentNode.children[targetName];
+                addToTerminal(`已刪除 '${fileName}'`, 'success');
+            });
+        }
+
+        // 處理 cp 指令
+        function handleCp(args) {
+            if (args.length < 2) {
+                addToTerminal('cp: 缺少目的地檔案操作數', 'error');
+                return;
+            }
+            
+            const source = args[0];
+            const dest = args[1];
+            
+            const sourcePath = resolvePath(source);
+            const sourceNode = getNodeAtPath(sourcePath);
+            
+            if (!sourceNode) {
+                addToTerminal(`cp: 無法取得 '${source}' 的狀態: 沒有此檔案或目錄`, 'error');
+                return;
+            }
+            
+            const destPath = resolvePath(dest);
+            const destParentPath = destPath.substring(0, destPath.lastIndexOf('/')) || '/';
+            const destName = destPath.split('/').pop();
+            
+            const destParentNode = getNodeAtPath(destParentPath);
+            
+            if (!destParentNode) {
+                addToTerminal(`cp: 無法建立 '${dest}': 沒有此檔案或目錄`, 'error');
+                return;
+            }
+            
+            destParentNode.children[destName] = JSON.parse(JSON.stringify(sourceNode));
+            addToTerminal(`已複製 '${source}' 到 '${dest}'`, 'success');
+        }
+
+        // 處理 mv 指令
+        function handleMv(args) {
+            if (args.length < 2) {
+                addToTerminal('mv: 缺少目的地檔案操作數', 'error');
+                return;
+            }
+            
+            const source = args[0];
+            const dest = args[1];
+            
+            const sourcePath = resolvePath(source);
+            const sourceParentPath = sourcePath.substring(0, sourcePath.lastIndexOf('/')) || '/';
+            const sourceName = sourcePath.split('/').pop();
+            const sourceParentNode = getNodeAtPath(sourceParentPath);
+            
+            if (!sourceParentNode || !sourceParentNode.children[sourceName]) {
+                addToTerminal(`mv: 無法取得 '${source}' 的狀態: 沒有此檔案或目錄`, 'error');
+                return;
+            }
+            
+            const sourceNode = sourceParentNode.children[sourceName];
+            
+            const destPath = resolvePath(dest);
+            const destParentPath = destPath.substring(0, destPath.lastIndexOf('/')) || '/';
+            const destName = destPath.split('/').pop();
+            const destParentNode = getNodeAtPath(destParentPath);
+            
+            if (!destParentNode) {
+                addToTerminal(`mv: 無法建立 '${dest}': 沒有此檔案或目錄`, 'error');
+                return;
+            }
+            
+            destParentNode.children[destName] = sourceNode;
+            delete sourceParentNode.children[sourceName];
+            addToTerminal(`已移動 '${source}' 到 '${dest}'`, 'success');
+        }
+
+        // 處理 cat 指令
+        function handleCat(args) {
+            if (args.length === 0) {
+                addToTerminal('cat: 缺少檔案操作數', 'error');
+                return;
+            }
+            
+            const fileName = args[0];
+            const fullPath = resolvePath(fileName);
+            const node = getNodeAtPath(fullPath);
+            
+            if (!node) {
+                addToTerminal(`cat: ${fileName}: 沒有此檔案或目錄`, 'error');
+                return;
+            }
+            
+            if (node.type !== 'file') {
+                addToTerminal(`cat: ${fileName}: 是目錄`, 'error');
+                return;
+            }
+            
+            addToTerminal(node.content || '(空白檔案)', 'output');
+        }
+
+        // 處理 echo 指令
+        function handleEcho(args) {
+            const text = args.join(' ');
+            
+            // 處理大括號展開
+            const expanded = expandBraces(text);
+            addToTerminal(expanded, 'output');
+        }
+
+        // 大括號展開
+        function expandBraces(text) {
+            // 簡單的數字範圍展開 {1..5}
+            const rangeRegex = /\{(\d+)\.\.(\d+)\}/g;
+            text = text.replace(rangeRegex, (match, start, end) => {
+                const result = [];
+                for (let i = parseInt(start); i <= parseInt(end); i++) {
+                    result.push(i);
+                }
+                return result.join(' ');
+            });
+            
+            // 字母範圍展開 {a..z}
+            const letterRegex = /\{([a-z])\.\.([a-z])\}/g;
+            text = text.replace(letterRegex, (match, start, end) => {
+                const result = [];
+                for (let i = start.charCodeAt(0); i <= end.charCodeAt(0); i++) {
+                    result.push(String.fromCharCode(i));
+                }
+                return result.join(' ');
+            });
+            
+            // 逗號分隔展開 {a,b,c}
+            const commaRegex = /\{([^}]+)\}/g;
+            text = text.replace(commaRegex, (match, content) => {
+                return content.split(',').join(' ');
+            });
+            
+            return text;
+        }
+
+        // 顯示幫助
+        function showHelp() {
+            const helpText = `
+可用指令：
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📂 檔案系統導航：
+  pwd              顯示當前目錄
+  ls [路徑]        列出目錄內容
+  cd [路徑]        切換目錄
+  
+📝 檔案操作：
+  touch [檔案]     建立檔案
+  mkdir [目錄]     建立目錄
+  rm [-r] [檔案]   刪除檔案（-r 刪除目錄）
+  cp [來源] [目標] 複製檔案
+  mv [來源] [目標] 移動/重新命名
+  cat [檔案]       顯示檔案內容
+  
+🎯 其他：
+  echo [文字]      顯示文字（支援展開）
+  clear            清除終端機
+  help             顯示此幫助訊息
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+提示：選擇左側課程開始學習！
+            `;
+            addToTerminal(helpText, 'output');
+        }
+
+        // 解析路徑
+        function resolvePath(path) {
+            if (path.startsWith('/')) {
+                return path;
+            }
+            
+            if (path === '.') {
+                return currentPath;
+            }
+            
+            if (path === '..') {
+                const parts = currentPath.split('/').filter(p => p);
+                parts.pop();
+                return '/' + parts.join('/');
+            }
+            
+            if (path.startsWith('../')) {
+                const parts = currentPath.split('/').filter(p => p);
+                const upLevels = path.match(/\.\.\//g).length;
+                for (let i = 0; i < upLevels; i++) {
+                    parts.pop();
+                }
+                const remaining = path.replace(/\.\.\//g, '');
+                return '/' + parts.join('/') + (remaining ? '/' + remaining : '');
+            }
+            
+            return currentPath === '/' ? `/${path}` : `${currentPath}/${path}`;
+        }
+
+        // 獲取路徑對應的節點
+        function getNodeAtPath(path) {
+            if (path === '/') {
+                return filesystem['/'];
+            }
+            
+            const parts = path.split('/').filter(p => p);
+            let current = filesystem['/'];
+            
+            for (let part of parts) {
+                if (!current.children || !current.children[part]) {
+                    return null;
+                }
+                current = current.children[part];
+            }
+            
+            return current;
+        }
+
+        // 添加到終端機
+        function addToTerminal(text, className = '') {
+            const terminal = document.getElementById('terminal');
+            const line = document.createElement('div');
+            line.className = `terminal-line ${className}`;
+            line.innerHTML = text;
+            terminal.appendChild(line);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        // 清除終端機
+        function clearTerminal() {
+            document.getElementById('terminal').innerHTML = '';
+        }
+
+        // 更新進度
+        function updateProgress() {
+            const progress = Math.round((currentLesson / lessons.length) * 100);
+            const progressBar = document.getElementById('progress');
+            progressBar.style.width = `${progress}%`;
+            progressBar.textContent = `${progress}%`;
+        }
+
+        // 頁面載入時初始化
+        window.onload = init;
+    </script>
+</body>
+</html>
